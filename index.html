@@ -1,0 +1,2660 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>ASTROSCIENCE – Digital Examination</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- jsPDF for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    /* ========== RESET & ROOT ========== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    :root {
+      --navy: #0a0e27;
+      --midnight: #131b3a;
+      --deep-blue: #1a2456;
+      --blue-accent: #3b82f6;
+      --cyan: #22d3ee;
+      --gold: #fbbf24;
+      --gold-dark: #d97706;
+      --white: #f8fafc;
+      --gray: #94a3b8;
+      --gray-dark: #475569;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --glass: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --radius: 16px;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    /* ========== STARFIELD BACKGROUND ========== */
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(34, 211, 238, 0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 80%, rgba(251, 191, 36, 0.04) 0%, transparent 50%),
+                  var(--navy);
+    }
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle infinite ease-in-out;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
+    /* ========== ORBITING PLANETS DECORATION ========== */
+    .planet-deco {
+      position: fixed;
+      border-radius: 50%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      filter: blur(2px);
+    }
+    .planet-deco.p1 {
+      width: 180px; height: 180px;
+      background: radial-gradient(circle at 30% 30%, #fbbf24, #d97706);
+      top: 10%; right: 5%;
+      animation: floatPlanet 20s ease-in-out infinite;
+    }
+    .planet-deco.p2 {
+      width: 120px; height: 120px;
+      background: radial-gradient(circle at 30% 30%, #22d3ee, #0891b2);
+      bottom: 15%; left: 3%;
+      animation: floatPlanet 25s ease-in-out infinite reverse;
+    }
+    .planet-deco.p3 {
+      width: 80px; height: 80px;
+      background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
+      top: 60%; right: 12%;
+      animation: floatPlanet 18s ease-in-out infinite;
+    }
+    @keyframes floatPlanet {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-30px) rotate(10deg); }
+    }
+    /* ========== LAYOUT ========== */
+    .app-container {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+    }
+    .page {
+      display: none;
+      animation: fadeSlideIn 0.5s ease forwards;
+      padding: 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .page.active {
+      display: block;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* ========== HEADER ========== */
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: rgba(10, 14, 39, 0.7);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+    }
+    .logo i {
+      color: var(--cyan);
+      font-size: 1.4rem;
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { text-shadow: 0 0 8px rgba(34, 211, 238, 0.4); }
+      50% { text-shadow: 0 0 20px rgba(34, 211, 238, 0.9); }
+    }
+    .logo span { color: var(--gold); }
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .nav-links button {
+      background: transparent;
+      border: 1px solid var(--glass-border);
+      color: var(--gray);
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: var(--transition);
+      font-family: 'Inter', sans-serif;
+    }
+    .nav-links button:hover {
+      background: var(--glass);
+      color: var(--white);
+      border-color: var(--cyan);
+    }
+    /* ========== HERO ========== */
+    .hero {
+      text-align: center;
+      padding: 40px 10px 20px;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 999px;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: var(--gold);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff 30%, var(--cyan) 70%, var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1rem, 3vw, 1.5rem);
+      color: var(--cyan);
+      font-weight: 600;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+    .hero p.tagline {
+      color: var(--gray);
+      font-size: clamp(0.85rem, 2vw, 1rem);
+      max-width: 680px;
+      margin: 0 auto 24px;
+      line-height: 1.7;
+      font-style: italic;
+    }
+    /* Solar system illustration */
+    .solar-system {
+      position: relative;
+      width: min(340px, 80vw);
+      height: min(340px, 80vw);
+      margin: 0 auto 30px;
+    }
+    .sun {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff7b0, #fbbf24 40%, #d97706 80%);
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.7), 0 0 60px rgba(251, 191, 36, 0.4);
+      animation: sunGlow 4s ease-in-out infinite;
+      z-index: 2;
+    }
+    @keyframes sunGlow {
+      0%, 100% { box-shadow: 0 0 30px rgba(251,191,36,0.7), 0 0 60px rgba(251,191,36,0.4); }
+      50% { box-shadow: 0 0 45px rgba(251,191,36,0.9), 0 0 90px rgba(251,191,36,0.6); }
+    }
+    .orbit {
+      position: absolute;
+      top: 50%; left: 50%;
+      border-radius: 50%;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      transform: translate(-50%, -50%);
+      animation: orbitSpin linear infinite;
+    }
+    @keyframes orbitSpin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .planet {
+      position: absolute;
+      border-radius: 50%;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 8px rgba(255,255,255,0.3);
+    }
+    .planet.mercury { width: 8px; height: 8px; background: #a8a29e; }
+    .planet.venus { width: 11px; height: 11px; background: #fbbf24; }
+    .planet.earth { width: 12px; height: 12px; background: #3b82f6; }
+    .planet.mars { width: 9px; height: 9px; background: #ef4444; }
+    .planet.jupiter { width: 18px; height: 18px; background: #d97706; }
+    .planet.saturn { width: 15px; height: 15px; background: #fcd34d; }
+    .planet.uranus { width: 12px; height: 12px; background: #22d3ee; }
+    .planet.neptune { width: 12px; height: 12px; background: #6366f1; }
+    /* Info cards */
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+      margin: 30px 0;
+    }
+    .info-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 22px 14px;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .info-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(34, 211, 238, 0.4);
+      box-shadow: 0 8px 30px rgba(34, 211, 238, 0.1);
+    }
+    .info-card i {
+      font-size: 1.6rem;
+      color: var(--cyan);
+      margin-bottom: 10px;
+    }
+    .info-card .value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .info-card .label {
+      font-size: 0.72rem;
+      color: var(--gray);
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+    }
+    /* Info section */
+    .info-section {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin: 24px 0;
+      text-align: left;
+    }
+    .info-section h3 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--gold);
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .info-section p {
+      color: var(--gray);
+      line-height: 1.8;
+      font-size: 0.9rem;
+    }
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 14px;
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      letter-spacing: 0.5px;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), var(--blue-accent));
+      color: var(--navy);
+      box-shadow: 0 6px 24px rgba(34, 211, 238, 0.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px rgba(34, 211, 238, 0.5);
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: var(--navy);
+      box-shadow: 0 6px 24px rgba(251, 191, 36, 0.35);
+    }
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px rgba(251, 191, 36, 0.5);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--glass-border);
+      color: var(--white);
+    }
+    .btn-outline:hover {
+      border-color: var(--cyan);
+      background: var(--glass);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: white;
+    }
+    .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(239,68,68,0.4); }
+    .btn-sm {
+      padding: 10px 20px;
+      font-size: 0.85rem;
+      border-radius: 10px;
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    .btn-block { width: 100%; }
+    /* ========== FORM ========== */
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--white);
+    }
+    .form-group label i { color: var(--cyan); margin-right: 6px; }
+    .form-control {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1.5px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      transition: var(--transition);
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--cyan);
+      background: rgba(34, 211, 238, 0.05);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+    }
+    .form-control::placeholder { color: var(--gray-dark); }
+    select.form-control { cursor: pointer; }
+    select.form-control option { background: var(--midnight); color: var(--white); }
+    /* ========== IDENTITY CARD ========== */
+    .identity-wrap {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      align-items: center;
+      margin-top: 20px;
+    }
+    @media (min-width: 768px) {
+      .identity-wrap { grid-template-columns: 1.4fr 1fr; }
+    }
+    .card-panel {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+    .astronaut-art {
+      text-align: center;
+      font-size: 7rem;
+      animation: astronautFloat 4s ease-in-out infinite;
+    }
+    @keyframes astronautFloat {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-18px) rotate(3deg); }
+    }
+    /* ========== PETUNJUK ========== */
+    .rules-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      margin: 20px 0;
+    }
+    @media (min-width: 768px) {
+      .rules-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .rule-card {
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .rule-card h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      color: var(--cyan);
+      margin-bottom: 14px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rule-card ol, .rule-card ul {
+      padding-left: 20px;
+      color: var(--gray);
+      font-size: 0.85rem;
+      line-height: 1.9;
+    }
+    .rule-card li { margin-bottom: 4px; }
+    .checkbox-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(34, 211, 238, 0.06);
+      border: 1.5px solid rgba(34, 211, 238, 0.25);
+      border-radius: 14px;
+      padding: 18px;
+      margin: 24px 0;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .checkbox-box:hover { border-color: var(--cyan); }
+    .checkbox-box input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--cyan);
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .checkbox-box span {
+      font-size: 0.88rem;
+      color: var(--white);
+      line-height: 1.5;
+    }
+    /* ========== EXAM PAGE ========== */
+    .exam-header {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 20px;
+    }
+    .exam-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .student-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      font-size: 0.82rem;
+    }
+    .student-info .item { color: var(--gray); }
+    .student-info .item strong { color: var(--white); font-weight: 600; }
+    .timer-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.15), rgba(59, 130, 246, 0.15));
+      border: 1.5px solid rgba(34, 211, 238, 0.4);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--cyan);
+      letter-spacing: 2px;
+    }
+    .timer-box.warning {
+      color: var(--yellow);
+      border-color: var(--yellow);
+      animation: timerPulse 1s infinite;
+    }
+    .timer-box.danger {
+      color: var(--red);
+      border-color: var(--red);
+      animation: timerPulse 0.6s infinite;
+    }
+    @keyframes timerPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .exam-body {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 900px) {
+      .exam-body { grid-template-columns: 1fr 240px; }
+    }
+    .question-panel {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 26px;
+    }
+    .question-number {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      padding: 6px 16px;
+      border-radius: 999px;
+      margin-bottom: 18px;
+      letter-spacing: 1px;
+    }
+    .question-text {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--white);
+      margin-bottom: 24px;
+      white-space: pre-line;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1.5px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+    .option:hover {
+      border-color: rgba(34, 211, 238, 0.5);
+      background: rgba(34, 211, 238, 0.05);
+    }
+    .option.selected {
+      border-color: var(--cyan);
+      background: rgba(34, 211, 238, 0.12);
+      box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+    }
+    .option-letter {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+    .option.selected .option-letter {
+      background: var(--cyan);
+      color: var(--navy);
+      border-color: var(--cyan);
+    }
+    .option-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--gray);
+      padding-top: 4px;
+    }
+    .option.selected .option-text { color: var(--white); }
+    /* Navigation */
+    .nav-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .nav-grid-card {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .nav-grid-card h4 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.78rem;
+      color: var(--gray);
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 7px;
+    }
+    .nav-num {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 1.5px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--gray);
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 600;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-num:hover { border-color: var(--cyan); color: var(--white); }
+    .nav-num.active {
+      background: var(--blue-accent);
+      border-color: var(--blue-accent);
+      color: white;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+    }
+    .nav-num.answered {
+      background: var(--green);
+      border-color: var(--green);
+      color: white;
+    }
+    .nav-num.marked {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: var(--navy);
+    }
+    .nav-num.active.answered { box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); }
+    .nav-num.active.marked { box-shadow: 0 0 12px rgba(234, 179, 8, 0.6); }
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 14px;
+      font-size: 0.72rem;
+      color: var(--gray);
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .answered-count {
+      font-size: 0.82rem;
+      color: var(--gray);
+      text-align: center;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+    }
+    .answered-count strong { color: var(--cyan); font-family: 'Orbitron', sans-serif; }
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    /* ========== MODAL ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 8, 20, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+    .modal-overlay.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-box {
+      background: linear-gradient(160deg, var(--midnight), var(--deep-blue));
+      border: 1px solid var(--glass-border);
+      border-radius: 22px;
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.85); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-box h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
+      color: var(--gold);
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+    .modal-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .modal-stat {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .modal-stat .num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+    .modal-stat .lbl { font-size: 0.72rem; color: var(--gray); margin-top: 4px; }
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .warning-text {
+      color: var(--yellow);
+      font-size: 0.82rem;
+      background: rgba(234, 179, 8, 0.1);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 14px;
+      line-height: 1.5;
+    }
+    /* ========== RESULT PAGE ========== */
+    .result-hero {
+      text-align: center;
+      padding: 30px 10px;
+    }
+    .result-hero h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.5rem, 4vw, 2.4rem);
+      background: linear-gradient(135deg, var(--gold), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .result-hero p { color: var(--gray); font-size: 0.9rem; }
+    .score-circle-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 28px 0;
+    }
+    .score-circle {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: conic-gradient(var(--cyan) 0deg, var(--cyan) calc(var(--score, 0) * 3.6deg), rgba(255,255,255,0.08) calc(var(--score, 0) * 3.6deg));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: background 1.5s ease;
+    }
+    .score-circle::before {
+      content: '';
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      background: var(--midnight);
+      border: 1px solid var(--glass-border);
+    }
+    .score-inner {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    .score-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3.2rem;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1;
+    }
+    .score-label { font-size: 0.78rem; color: var(--gray); margin-top: 6px; letter-spacing: 1px; }
+    .category-badge {
+      display: inline-block;
+      padding: 8px 24px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      margin-top: 6px;
+    }
+    .cat-sangat { background: rgba(34, 197, 94, 0.15); color: var(--green); border: 1.5px solid rgba(34,197,94,0.4); }
+    .cat-baik { background: rgba(34, 211, 238, 0.15); color: var(--cyan); border: 1.5px solid rgba(34,211,238,0.4); }
+    .cat-cukup { background: rgba(251, 191, 36, 0.15); color: var(--gold); border: 1.5px solid rgba(251,191,36,0.4); }
+    .cat-kurang { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1.5px solid rgba(239,68,68,0.4); }
+    .result-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 14px;
+      margin: 24px 0;
+    }
+    .result-stat {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 18px 12px;
+      text-align: center;
+    }
+    .result-stat .num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+    .result-stat .lbl { font-size: 0.72rem; color: var(--gray); margin-top: 4px; }
+    .result-stat.green .num { color: var(--green); }
+    .result-stat.red .num { color: var(--red); }
+    .result-stat.gray .num { color: var(--gray); }
+    .result-stat.gold .num { color: var(--gold); }
+    .result-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin: 28px 0;
+    }
+    /* Review section */
+    .review-section {
+      display: none;
+      margin-top: 30px;
+      animation: fadeSlideIn 0.5s ease;
+    }
+    .review-section.active { display: block; }
+    .review-item {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 16px;
+    }
+    .review-item.correct { border-left: 4px solid var(--green); }
+    .review-item.wrong { border-left: 4px solid var(--red); }
+    .review-item.unanswered { border-left: 4px solid var(--gray); }
+    .review-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .review-num {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--gold);
+    }
+    .review-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+    }
+    .review-status.correct { background: rgba(34,197,94,0.15); color: var(--green); }
+    .review-status.wrong { background: rgba(239,68,68,0.15); color: var(--red); }
+    .review-status.unanswered { background: rgba(148,163,184,0.15); color: var(--gray); }
+    .review-q { font-size: 0.88rem; line-height: 1.7; margin-bottom: 14px; white-space: pre-line; }
+    .review-answers {
+      display: grid;
+      gap: 8px;
+      font-size: 0.82rem;
+      margin-bottom: 10px;
+    }
+    .review-answers .ans-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--glass-border);
+    }
+    .review-answers .ans-row.correct-ans {
+      background: rgba(34,197,94,0.08);
+      border-color: rgba(34,197,94,0.3);
+    }
+    .review-answers .ans-row.wrong-ans {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.3);
+    }
+    .ans-label { font-weight: 600; color: var(--gray); min-width: 110px; }
+    .ans-value { color: var(--white); }
+    .pembahasan {
+      font-size: 0.8rem;
+      color: var(--gray);
+      line-height: 1.7;
+      background: rgba(34,211,238,0.04);
+      border: 1px solid rgba(34,211,238,0.15);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 8px;
+    }
+    .pembahasan strong { color: var(--cyan); }
+    /* ========== TEACHER DASHBOARD ========== */
+    .teacher-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-top: 16px;
+    }
+    .teacher-table th, .teacher-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .teacher-table th {
+      color: var(--cyan);
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .teacher-table td { color: var(--gray); }
+    .teacher-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .teacher-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 14px;
+      margin: 20px 0;
+    }
+    /* ========== UTILITY ========== */
+    .text-center { text-align: center; }
+    .mt-1 { margin-top: 8px; }
+    .mt-2 { margin-top: 16px; }
+    .mt-3 { margin-top: 24px; }
+    .mb-2 { margin-bottom: 16px; }
+    .hidden { display: none !important; }
+    .notice {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120px);
+      background: linear-gradient(135deg, var(--midnight), var(--deep-blue));
+      border: 1px solid var(--cyan);
+      border-radius: 12px;
+      padding: 14px 24px;
+      color: var(--white);
+      font-size: 0.85rem;
+      z-index: 2000;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      max-width: 90vw;
+      text-align: center;
+    }
+    .notice.show { transform: translateX(-50%) translateY(0); }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--navy); }
+    ::-webkit-scrollbar-thumb { background: var(--deep-blue); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--blue-accent); }
+    /* Responsive tweaks */
+    @media (max-width: 480px) {
+      .page { padding: 12px; }
+      .card-panel { padding: 20px; }
+      .question-panel { padding: 18px; }
+      .btn { padding: 14px 24px; font-size: 0.9rem; }
+      .timer-box { font-size: 1rem; padding: 8px 14px; }
+      .modal-box { padding: 24px 20px; }
+      .result-buttons .btn { flex: 1 1 100%; }
+      .nav-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+      .nav-num { font-size: 0.7rem; }
+    }
+    @media print {
+      #starfield, .planet-deco, .site-header, .result-buttons, .exam-header { display: none !important; }
+      body { background: white; color: black; }
+      .page { display: block !important; }
+      .card-panel, .review-item { border: 1px solid #ccc; background: white; color: black; }
+      .review-q, .ans-value, .pembahasan { color: black; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Starfield background -->
+<div id="starfield"></div>
+<!-- Decorative planets -->
+<div class="planet-deco p1"></div>
+<div class="planet-deco p2"></div>
+<div class="planet-deco p3"></div>
+
+<!-- Notification -->
+<div id="notice" class="notice"></div>
+
+<div class="app-container">
+
+  <!-- ==================== PAGE: BERANDA ==================== -->
+  <div id="page-home" class="page active">
+    <header class="site-header">
+      <div class="logo">
+        <i class="fas fa-rocket"></i>
+        ASTRO<span>SCIENCE</span>
+      </div>
+      <nav class="nav-links">
+        <button onclick="scrollToInfo()"><i class="fas fa-circle-info"></i> Informasi Ujian</button>
+        <button onclick="showPage('page-rules')"><i class="fas fa-list-check"></i> Petunjuk</button>
+        <button onclick="showPage('page-about')"><i class="fas fa-graduation-cap"></i> Tentang Ujian</button>
+        <button onclick="openTeacherLogin()"><i class="fas fa-chalkboard-user"></i> Guru</button>
+      </nav>
+    </header>
+
+    <div class="hero">
+      <div class="hero-badge"><i class="fas fa-star"></i> KURIKULUM MERDEKA · 2026/2027</div>
+      <h1>WELCOME TO ASTROSCIENCE</h1>
+      <h2>ULANGAN HARIAN IPA</h2>
+      <h2 style="color: var(--gold); font-size: clamp(1.2rem, 3.5vw, 2rem);">BUMI DAN TATA SURYA</h2>
+      <p class="tagline">"Seberapa jauh kamu mengenal alam semesta? Saatnya buktikan pemahamanmu tentang planet, benda langit, dan berbagai fenomena yang terjadi di Tata Surya!"</p>
+
+      <!-- Solar system illustration -->
+      <div class="solar-system" id="solarSystem">
+        <div class="sun"></div>
+        <!-- Orbits and planets will be generated by JS -->
+      </div>
+
+      <!-- Info cards -->
+      <div class="info-cards">
+        <div class="info-card">
+          <i class="fas fa-file-pen"></i>
+          <div class="value">25</div>
+          <div class="label">SOAL PILIHAN GANDA</div>
+        </div>
+        <div class="info-card">
+          <i class="fas fa-clock"></i>
+          <div class="value">60</div>
+          <div class="label">MENIT WAKTU PENGERJAAN</div>
+        </div>
+        <div class="info-card">
+          <i class="fas fa-star"></i>
+          <div class="value">100</div>
+          <div class="label">POIN NILAI MAKSIMAL</div>
+        </div>
+        <div class="info-card">
+          <i class="fas fa-users"></i>
+          <div class="value">VII</div>
+          <div class="label">KELAS VII SMP</div>
+        </div>
+      </div>
+
+      <!-- Info section -->
+      <div class="info-section" id="infoUjian">
+        <h3><i class="fas fa-circle-info"></i> INFORMASI PELAKSANAAN</h3>
+        <p>Ulangan harian ini bertujuan untuk mengetahui pemahaman siswa terhadap materi Bumi dan Tata Surya. Soal disusun berdasarkan materi pembelajaran IPA kelas VII dengan tingkat kesulitan bervariasi, mulai dari pemahaman konsep hingga analisis fenomena.</p>
+      </div>
+
+      <button class="btn btn-primary btn-lg" onclick="startExamFlow()" style="margin-bottom: 30px;">
+        MULAI UJIAN <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: IDENTITAS ==================== -->
+  <div id="page-identity" class="page">
+    <header class="site-header">
+      <div class="logo"><i class="fas fa-rocket"></i> ASTRO<span>SCIENCE</span></div>
+      <nav class="nav-links">
+        <button onclick="showPage('page-home')"><i class="fas fa-home"></i> Beranda</button>
+      </nav>
+    </header>
+    <div style="padding: 30px 0;">
+      <div class="text-center mb-2">
+        <h1 style="font-family:'Orbitron';font-size:clamp(1.4rem,4vw,2rem);color:var(--white);">IDENTITAS PESERTA UJIAN</h1>
+        <p style="color:var(--gray);margin-top:8px;font-size:0.9rem;">Lengkapi identitas diri sebelum memulai pengerjaan soal.</p>
+      </div>
+      <div class="identity-wrap">
+        <div class="card-panel">
+          <div class="form-group">
+            <label for="inputNama"><i class="fas fa-user"></i> Nama Lengkap</label>
+            <input type="text" id="inputNama" class="form-control" placeholder="Masukkan nama lengkap" autocomplete="name" />
+          </div>
+          <div class="form-group">
+            <label for="inputAbsen"><i class="fas fa-hashtag"></i> Nomor Absen</label>
+            <input type="text" id="inputAbsen" class="form-control" placeholder="Masukkan nomor absen (angka)" inputmode="numeric" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="inputKelas"><i class="fas fa-school"></i> Kelas</label>
+            <select id="inputKelas" class="form-control">
+              <option value="">— Pilih Kelas —</option>
+              <option value="VII A">VII A</option>
+              <option value="VII B">VII B</option>
+              <option value="VII C">VII C</option>
+              <option value="VII D">VII D</option>
+              <option value="VII E">VII E</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="saveIdentity()" style="margin-top:10px;">
+            SIMPAN IDENTITAS & LANJUTKAN <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+        <div class="astronaut-art">👨‍🚀</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: PETUNJUK ==================== -->
+  <div id="page-rules" class="page">
+    <header class="site-header">
+      <div class="logo"><i class="fas fa-rocket"></i> ASTRO<span>SCIENCE</span></div>
+      <nav class="nav-links">
+        <button onclick="showPage('page-home')"><i class="fas fa-home"></i> Beranda</button>
+      </nav>
+    </header>
+    <div style="padding: 30px 0;">
+      <div class="text-center mb-2">
+        <h1 style="font-family:'Orbitron';font-size:clamp(1.4rem,4vw,2rem);">PETUNJUK DAN TATA TERTIB UJIAN</h1>
+      </div>
+      <div class="rules-grid">
+        <div class="rule-card">
+          <h4><i class="fas fa-list-check"></i> PETUNJUK PENGERJAAN</h4>
+          <ol>
+            <li>Ujian terdiri atas 25 soal pilihan ganda.</li>
+            <li>Setiap soal memiliki empat pilihan jawaban, yaitu A, B, C, dan D.</li>
+            <li>Bacalah soal secara teliti sebelum memilih jawaban.</li>
+            <li>Pilih satu jawaban yang paling tepat.</li>
+            <li>Setiap jawaban benar memperoleh nilai 4.</li>
+            <li>Jawaban salah atau tidak dijawab memperoleh nilai 0.</li>
+            <li>Waktu pengerjaan adalah 60 menit.</li>
+            <li>Siswa dapat berpindah ke soal sebelumnya maupun berikutnya.</li>
+            <li>Jawaban yang sudah dipilih akan tersimpan secara otomatis.</li>
+            <li>Siswa dapat menandai soal yang ingin diperiksa kembali.</li>
+            <li>Pastikan seluruh soal sudah dijawab sebelum mengumpulkan ujian.</li>
+            <li>Jika waktu habis, sistem akan mengumpulkan jawaban secara otomatis.</li>
+          </ol>
+        </div>
+        <div class="rule-card">
+          <h4><i class="fas fa-scale-balanced"></i> TATA TERTIB UJIAN</h4>
+          <ul>
+            <li>Kerjakan ujian secara mandiri dan jujur.</li>
+            <li>Tidak diperbolehkan bekerja sama selama ujian.</li>
+            <li>Tidak diperbolehkan membuka sumber jawaban lain.</li>
+            <li>Jangan menutup atau menyegarkan halaman ketika ujian berlangsung.</li>
+            <li>Periksa kembali jawaban sebelum mengakhiri ujian.</li>
+          </ul>
+        </div>
+      </div>
+      <label class="checkbox-box" for="checkRules">
+        <input type="checkbox" id="checkRules" onchange="toggleStartButton()" />
+        <span>☐ Saya telah membaca dan memahami petunjuk serta tata tertib ujian.</span>
+      </label>
+      <div class="text-center">
+        <button class="btn btn-gold" id="btnStartExam" onclick="startWorking()" disabled>
+          MULAI MENGERJAKAN SOAL <i class="fas fa-pen-to-square"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: ABOUT ==================== -->
+  <div id="page-about" class="page">
+    <header class="site-header">
+      <div class="logo"><i class="fas fa-rocket"></i> ASTRO<span>SCIENCE</span></div>
+      <nav class="nav-links">
+        <button onclick="showPage('page-home')"><i class="fas fa-home"></i> Beranda</button>
+      </nav>
+    </header>
+    <div style="padding: 30px 0;">
+      <div class="text-center mb-2">
+        <h1 style="font-family:'Orbitron';font-size:clamp(1.4rem,4vw,2rem);">TENTANG UJIAN</h1>
+      </div>
+      <div class="card-panel">
+        <div class="info-section">
+          <h3><i class="fas fa-graduation-cap"></i> ASTROSCIENCE</h3>
+          <p>ASTROSCIENCE adalah platform ujian digital interaktif yang dirancang untuk membantu siswa mengukur pemahaman materi Bumi dan Tata Surya secara modern, profesional, dan menyenangkan.</p>
+        </div>
+        <div class="info-section">
+          <h3><i class="fas fa-circle-info"></i> IDENTITAS UJIAN</h3>
+          <p>
+            <strong>Mata Pelajaran:</strong> Ilmu Pengetahuan Alam (IPA)<br>
+            <strong>Kelas:</strong> VII SMP<br>
+            <strong>Bab:</strong> VII – Bumi dan Tata Surya<br>
+            <strong>Kurikulum:</strong> Kurikulum Merdeka<br>
+            <strong>Tahun Pelajaran:</strong> 2026/2027<br>
+            <strong>Jumlah Soal:</strong> 25 soal<br>
+            <strong>Bentuk Soal:</strong> Pilihan Ganda (A, B, C, D)<br>
+            <strong>Waktu:</strong> 60 menit<br>
+            <strong>Nilai Maksimal:</strong> 100
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: EXAM ==================== -->
+  <div id="page-exam" class="page">
+    <header class="site-header">
+      <div class="logo"><i class="fas fa-rocket"></i> ASTRO<span>SCIENCE</span></div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div class="student-info" id="studentInfoHeader"></div>
+      </div>
+    </header>
+
+    <div class="exam-header">
+      <div class="exam-header-top">
+        <div>
+          <div style="font-family:'Orbitron';font-size:0.8rem;color:var(--cyan);letter-spacing:1px;margin-bottom:4px;">ULANGAN HARIAN IPA — BUMI DAN TATA SURYA</div>
+          <div class="student-info" id="studentInfoFull"></div>
+        </div>
+        <div class="timer-box" id="timerBox">
+          <i class="fas fa-clock"></i>
+          <span id="timerDisplay">60:00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="exam-body">
+      <div class="question-panel">
+        <div class="question-number" id="questionNumberLabel">SOAL 1 DARI 25</div>
+        <div class="question-text" id="questionText"></div>
+        <div class="options" id="optionsContainer"></div>
+      </div>
+
+      <div class="nav-sidebar">
+        <div class="nav-grid-card">
+          <h4><i class="fas fa-grip"></i> Navigasi Soal</h4>
+          <div class="nav-grid" id="navGrid"></div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.1);border:1px solid var(--glass-border);"></div> Belum dijawab</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--blue-accent);"></div> Sedang dibuka</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green);"></div> Sudah dijawab</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--yellow);"></div> Ditandai</div>
+          </div>
+          <div class="answered-count" style="margin-top:12px;">Soal terjawab: <strong id="answeredCounter">0/25</strong></div>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-outline btn-sm" onclick="prevQuestion()"><i class="fas fa-arrow-left"></i> SOAL SEBELUMNYA</button>
+          <button class="btn btn-outline btn-sm" onclick="nextQuestion()">SOAL SELANJUTNYA <i class="fas fa-arrow-right"></i></button>
+          <button class="btn btn-outline btn-sm" id="btnMark" onclick="toggleMark()"><i class="fas fa-flag"></i> TANDAI UNTUK DITINJAU</button>
+          <button class="btn btn-danger btn-sm" onclick="showSubmitModal()"><i class="fas fa-paper-plane"></i> SELESAI UJIAN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: RESULT ==================== -->
+  <div id="page-result" class="page">
+    <header class="site-header">
+      <div class="logo"><i class="fas fa-rocket"></i> ASTRO<span>SCIENCE</span></div>
+      <nav class="nav-links">
+        <button onclick="showPage('page-home')"><i class="fas fa-home"></i> Beranda</button>
+      </nav>
+    </header>
+
+    <div class="result-hero">
+      <h1>EXAMINATION COMPLETED!</h1>
+      <p>Selamat! Kamu telah menyelesaikan Ulangan Harian IPA materi Bumi dan Tata Surya.</p>
+    </div>
+
+    <div class="score-circle-wrap">
+      <div class="score-circle" id="scoreCircle" style="--score:0;">
+        <div class="score-inner">
+          <div class="score-value" id="scoreValue">0</div>
+          <div class="score-label">NILAI AKHIR</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center">
+      <div class="category-badge" id="categoryBadge">—</div>
+    </div>
+
+    <div class="card-panel mt-3" id="resultIdentityCard">
+      <!-- filled by JS -->
+    </div>
+
+    <div class="result-stats" id="resultStats">
+      <!-- filled by JS -->
+    </div>
+
+    <div class="text-center" id="resultMotivation" style="color:var(--gray);font-size:0.9rem;line-height:1.7;max-width:600px;margin:0 auto;">
+    </div>
+
+    <div class="result-buttons">
+      <button class="btn btn-primary" onclick="toggleReview()"><i class="fas fa-list-check"></i> LIHAT RINCIAN HASIL</button>
+      <button class="btn btn-gold" onclick="downloadPDF()"><i class="fas fa-download"></i> DOWNLOAD HASIL UJIAN (PDF)</button>
+      <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print"></i> CETAK HASIL</button>
+      <button class="btn btn-outline" onclick="backToHome()"><i class="fas fa-home"></i> KEMBALI KE BERANDA</button>
+    </div>
+
+    <!-- Review Section -->
+    <div class="review-section" id="reviewSection">
+      <h2 style="font-family:'Orbitron';color:var(--cyan);font-size:1.1rem;letter-spacing:1px;margin-bottom:20px;">
+        <i class="fas fa-magnifying-glass"></i> PEMBAHASAN DAN HASIL JAWABAN
+      </h2>
+      <div id="reviewList"></div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: TEACHER DASHBOARD ==================== -->
+  <div id="page-teacher" class="page">
+    <header class="site-header">
+      <div class="logo"><i class="fas fa-chalkboard-user"></i> DASHBOARD <span>GURU</span></div>
+      <nav class="nav-links">
+        <button onclick="showPage('page-home')"><i class="fas fa-home"></i> Beranda</button>
+        <button onclick="logoutTeacher()"><i class="fas fa-sign-out-alt"></i> Keluar</button>
+      </nav>
+    </header>
+    <div style="padding: 30px 0;">
+      <h1 style="font-family:'Orbitron';font-size:1.3rem;margin-bottom:20px;">REKAP HASIL UJIAN SISWA</h1>
+      <div class="teacher-stats" id="teacherStats"></div>
+      <div style="overflow-x:auto;">
+        <table class="teacher-table" id="teacherTable">
+          <thead>
+            <tr>
+              <th>No</th><th>Nama</th><th>Absen</th><th>Kelas</th><th>Benar</th><th>Salah</th><th>Kosong</th><th>Nilai</th><th>Tanggal</th>
+            </tr>
+          </thead>
+          <tbody id="teacherTableBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()"><i class="fas fa-file-csv"></i> UNDUH CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="loadResults()"><i class="fas fa-rotate"></i> REFRESH DATA</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== MODAL: SUBMIT CONFIRM ==================== -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal-box">
+    <h3><i class="fas fa-circle-question"></i><br>Apakah Kamu Yakin Ingin Mengakhiri Ujian?</h3>
+    <div class="modal-stats">
+      <div class="modal-stat"><div class="num">25</div><div class="lbl">Total Soal</div></div>
+      <div class="modal-stat"><div class="num" id="modalAnswered" style="color:var(--green);">0</div><div class="lbl">Sudah Dijawab</div></div>
+      <div class="modal-stat"><div class="num" id="modalUnanswered" style="color:var(--red);">25</div><div class="lbl">Belum Dijawab</div></div>
+      <div class="modal-stat"><div class="num" id="modalMarked" style="color:var(--gold);">0</div><div class="lbl">Ditandai</div></div>
+    </div>
+    <div class="warning-text hidden" id="modalWarning">
+      <i class="fas fa-triangle-exclamation"></i> Masih ada soal yang belum dijawab. Yakin ingin mengumpulkan?
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-block" onclick="closeModal('submitModal')"><i class="fas fa-arrow-left"></i> KEMBALI MEMERIKSA</button>
+      <button class="btn btn-danger btn-block" onclick="confirmSubmit()"><i class="fas fa-check"></i> YA, KUMPULKAN JAWABAN</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: TEACHER LOGIN ==================== -->
+<div class="modal-overlay" id="teacherLoginModal">
+  <div class="modal-box">
+    <h3><i class="fas fa-lock"></i><br>Login Dashboard Guru</h3>
+    <div class="form-group">
+      <input type="password" id="teacherPin" class="form-control" placeholder="Masukkan PIN (default: 12345)" style="text-align:center;letter-spacing:8px;font-size:1.2rem;" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-block" onclick="closeModal('teacherLoginModal')">BATAL</button>
+      <button class="btn btn-primary btn-block" onclick="verifyTeacherPin()">MASUK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ASTROSCIENCE – DIGITAL EXAMINATION
+   Complete JavaScript Logic
+   ============================================================ */
+
+// ==================== DATA SOAL ====================
+const QUESTIONS = [
+  {
+    q: "Seorang peneliti mengelompokkan Merkurius, Venus, Bumi, dan Mars ke dalam satu kelompok planet. Keempat planet tersebut memiliki karakteristik yang berbeda dari Jupiter, Saturnus, Uranus, dan Neptunus. Dasar pengelompokan yang paling tepat adalah ....",
+    options: [
+      "Memiliki periode revolusi yang lebih lama dan atmosfer sangat tebal.",
+      "Memiliki permukaan padat yang tersusun terutama atas batuan dan logam.",
+      "Berada pada jarak yang sama dari Matahari.",
+      "Memiliki jumlah satelit alami yang lebih banyak."
+    ],
+    answer: "B",
+    pembahasan: "Planet terestrial (Merkurius, Venus, Bumi, Mars) memiliki permukaan padat yang tersusun terutama atas batuan dan logam, berbeda dengan planet gas/raksasa es."
+  },
+  {
+    q: "Venus memiliki suhu permukaan sekitar 460°C, sedangkan Merkurius yang lebih dekat dengan Matahari memiliki suhu malam yang sangat rendah. Fenomena tersebut menunjukkan bahwa ....",
+    options: [
+      "Merkurius tidak menerima energi Matahari.",
+      "Venus menghasilkan panas sendiri melalui aktivitas intinya.",
+      "Atmosfer tebal Venus menyebabkan efek rumah kaca yang sangat kuat.",
+      "Merkurius memiliki ukuran lebih besar daripada Venus."
+    ],
+    answer: "C",
+    pembahasan: "Venus memiliki atmosfer sangat tebal didominasi CO₂ yang menimbulkan efek rumah kaca ekstrem sehingga suhunya lebih panas daripada Merkurius."
+  },
+  {
+    q: "Jupiter dan Saturnus dikelompokkan sebagai planet raksasa gas, sedangkan Uranus dan Neptunus sering disebut planet raksasa es. Perbedaan utama yang mendasari pengelompokan tersebut adalah ....",
+    options: [
+      "Jupiter dan Saturnus tidak memiliki atmosfer.",
+      "Uranus dan Neptunus memiliki permukaan padat seperti Bumi.",
+      "Jupiter dan Saturnus didominasi hidrogen dan helium, sedangkan Uranus dan Neptunus memiliki material volatil seperti air, amonia, dan metana pada bagian dalamnya.",
+      "Uranus dan Neptunus berada lebih dekat dengan Matahari daripada Jupiter."
+    ],
+    answer: "C",
+    pembahasan: "Planet raksasa gas (Jupiter, Saturnus) didominasi hidrogen dan helium, sedangkan raksasa es (Uranus, Neptunus) mengandung banyak material volatil seperti air, amonia, dan metana."
+  },
+  {
+    q: "Uranus mempunyai kemiringan sumbu rotasi sekitar 98° terhadap bidang orbitnya. Kondisi tersebut menyebabkan ....",
+    options: [
+      "Uranus tidak mengalami rotasi.",
+      "Uranus tampak berputar seperti menggelinding dan mengalami perubahan musim yang ekstrem.",
+      "Uranus selalu menghadap Matahari pada seluruh permukaannya.",
+      "Uranus memiliki suhu lebih tinggi daripada Venus."
+    ],
+    answer: "B",
+    pembahasan: "Kemiringan sumbu Uranus yang ekstrem (~98°) membuatnya tampak menggelinding saat mengorbit dan mengalami musim yang sangat ekstrem."
+  },
+  {
+    q: "Seorang siswa mengamati data dua planet berikut.\n• Planet X memiliki periode revolusi sekitar 88 hari.\n• Planet Y memiliki periode revolusi sekitar 165 tahun.\nBerdasarkan data tersebut, kesimpulan yang paling tepat adalah ....",
+    options: [
+      "Planet X adalah Neptunus dan Planet Y adalah Merkurius.",
+      "Planet X adalah Venus dan Planet Y adalah Uranus.",
+      "Planet X adalah Merkurius dan Planet Y adalah Neptunus.",
+      "Planet X adalah Mars dan Planet Y adalah Saturnus."
+    ],
+    answer: "C",
+    pembahasan: "Merkurius mengorbit Matahari hanya ~88 hari, sedangkan Neptunus memerlukan ~165 tahun untuk sekali revolusi."
+  },
+  {
+    q: "Jupiter memiliki Bintik Merah Besar yang merupakan badai raksasa dan telah diamati selama ratusan tahun. Berdasarkan karakteristik tersebut, Bintik Merah Besar menunjukkan bahwa ....",
+    options: [
+      "Jupiter memiliki aktivitas atmosfer berupa badai dengan skala sangat besar.",
+      "Jupiter mempunyai gunung berapi aktif pada permukaannya.",
+      "Jupiter mengalami tumbukan asteroid setiap hari.",
+      "Jupiter memiliki lautan luas yang menghasilkan warna merah."
+    ],
+    answer: "A",
+    pembahasan: "Great Red Spot adalah badai antisiklon raksasa di atmosfer Jupiter yang telah berlangsung setidaknya ratusan tahun."
+  },
+  {
+    q: "Saturnus mempunyai cincin yang tampak jelas ketika diamati menggunakan teleskop. Cincin tersebut tersusun atas ....",
+    options: [
+      "Gas oksigen dan nitrogen.",
+      "Partikel es, batuan, dan debu.",
+      "Air dalam bentuk cair.",
+      "Logam cair dari inti planet."
+    ],
+    answer: "B",
+    pembahasan: "Cincin Saturnus tersusun dari miliaran partikel es, batuan, dan debu yang mengorbit planet."
+  },
+  {
+    q: "Perhatikan pernyataan berikut.\n1. Merkurius memiliki atmosfer sangat tipis.\n2. Venus mempunyai atmosfer tebal yang didominasi karbon dioksida.\n3. Bumi memiliki atmosfer yang mengandung nitrogen dan oksigen.\n4. Mars mempunyai atmosfer sangat tebal yang didominasi oksigen.\nPernyataan yang benar ditunjukkan oleh nomor ....",
+    options: [
+      "1, 2, dan 3.",
+      "1 dan 4.",
+      "2 dan 4.",
+      "1, 2, 3, dan 4."
+    ],
+    answer: "A",
+    pembahasan: "Pernyataan 1, 2, dan 3 benar. Mars memiliki atmosfer tipis yang didominasi CO₂, bukan oksigen, sehingga pernyataan 4 salah."
+  },
+  {
+    q: "Sebuah benda langit ditemukan memiliki permukaan padat dan sebagian besar tersusun atas batuan serta logam. Benda tersebut termasuk kelompok planet terestrial. Planet yang tidak termasuk dalam kelompok tersebut adalah ....",
+    options: [
+      "Merkurius.",
+      "Venus.",
+      "Mars.",
+      "Saturnus."
+    ],
+    answer: "D",
+    pembahasan: "Saturnus adalah planet raksasa gas, bukan planet terestrial."
+  },
+  {
+    q: "Seorang pengamat menemukan benda langit yang bergerak mengelilingi Matahari dengan lintasan tertentu. Benda tersebut tersusun atas batuan dan logam serta banyak ditemukan di antara orbit Mars dan Jupiter. Benda langit yang dimaksud adalah ....",
+    options: [
+      "Asteroid.",
+      "Satelit alami.",
+      "Meteor.",
+      "Komet."
+    ],
+    answer: "A",
+    pembahasan: "Asteroid adalah benda batuan/logam yang banyak mengorbit di sabuk asteroid antara Mars dan Jupiter."
+  },
+  {
+    q: "Ketika sebuah meteoroid memasuki atmosfer Bumi dengan kecepatan tinggi, benda tersebut mengalami pemanasan dan menghasilkan cahaya yang terlihat dari permukaan Bumi. Fenomena tersebut disebut ....",
+    options: [
+      "Meteorit.",
+      "Meteor.",
+      "Asteroid.",
+      "Komet."
+    ],
+    answer: "B",
+    pembahasan: "Meteor adalah penampakan cahaya akibat meteoroid yang terbakar di atmosfer Bumi."
+  },
+  {
+    q: "Perhatikan tiga kondisi berikut.\n1. Benda langit berupa pecahan batuan berada di ruang angkasa.\n2. Benda tersebut memasuki atmosfer dan terlihat sebagai garis cahaya.\n3. Sisa benda tersebut berhasil mencapai permukaan Bumi.\nUrutan istilah yang tepat untuk ketiga kondisi tersebut adalah ....",
+    options: [
+      "Meteor – meteoroid – meteorit.",
+      "Meteorit – meteor – meteoroid.",
+      "Meteoroid – meteor – meteorit.",
+      "Asteroid – komet – meteor."
+    ],
+    answer: "C",
+    pembahasan: "Urutan yang benar: meteoroid (di ruang angkasa) → meteor (terbakar di atmosfer) → meteorit (sisa yang mencapai permukaan Bumi)."
+  },
+  {
+    q: "Komet sering terlihat memiliki ekor yang memanjang ketika mendekati Matahari. Penyebab utama terbentuknya ekor komet adalah ....",
+    options: [
+      "Komet menghasilkan cahaya sendiri ketika mendekati Matahari.",
+      "Panas Matahari menyebabkan es pada komet mengalami pelepasan gas dan debu.",
+      "Komet bertabrakan dengan planet ketika mengelilingi Matahari.",
+      "Gravitasi Bumi menarik seluruh material komet."
+    ],
+    answer: "B",
+    pembahasan: "Ketika mendekati Matahari, panas menyebabkan es dan material volatil pada komet menguap membentuk gas dan debu yang membentuk ekor."
+  },
+  {
+    q: "Bulan merupakan benda langit yang tampak bercahaya ketika diamati dari Bumi. Akan tetapi, Bulan tidak menghasilkan cahaya sendiri. Hal tersebut terjadi karena ....",
+    options: [
+      "Bulan memancarkan energi dari inti planet.",
+      "Bulan memantulkan cahaya Matahari ke arah Bumi.",
+      "Bulan menerima cahaya dari bintang lain.",
+      "Bulan menghasilkan cahaya akibat gesekan atmosfer."
+    ],
+    answer: "B",
+    pembahasan: "Bulan tampak bercahaya karena memantulkan cahaya Matahari yang mengenainya."
+  },
+  {
+    q: "Bulan selalu memperlihatkan bagian permukaan yang hampir sama ketika diamati dari Bumi. Kondisi tersebut terjadi karena ....",
+    options: [
+      "Bulan tidak mengalami rotasi.",
+      "Bulan hanya mengalami revolusi tanpa rotasi.",
+      "Periode rotasi Bulan hampir sama dengan periode revolusinya mengelilingi Bumi.",
+      "Bumi tidak mengalami gerakan rotasi."
+    ],
+    answer: "C",
+    pembahasan: "Bulan mengalami rotasi sinkron: periode rotasinya sama dengan periode revolusinya mengelilingi Bumi, sehingga sisi yang sama selalu menghadap Bumi."
+  },
+  {
+    q: "Seorang siswa mengamati bahwa permukaan Bulan terlihat berbeda-beda selama beberapa malam. Kadang Bulan tampak seperti sabit, setengah lingkaran, dan bulat penuh. Perubahan tersebut terjadi karena ....",
+    options: [
+      "Bulan berubah bentuk setiap malam.",
+      "Posisi relatif Matahari, Bumi, dan Bulan berubah sehingga bagian Bulan yang terkena cahaya Matahari terlihat berbeda dari Bumi.",
+      "Bulan menghasilkan cahaya dengan intensitas yang berubah-ubah.",
+      "Bumi menutupi seluruh permukaan Bulan secara bergantian."
+    ],
+    answer: "B",
+    pembahasan: "Fase Bulan terjadi karena perubahan posisi relatif Matahari–Bumi–Bulan yang mengubah bagian Bulan yang terkena cahaya Matahari dan terlihat dari Bumi."
+  },
+  {
+    q: "Pada suatu peristiwa astronomi, posisi Matahari, Bulan, dan Bumi berada hampir segaris dengan Bulan berada di antara Matahari dan Bumi. Fenomena yang dapat terjadi adalah ....",
+    options: [
+      "Gerhana Bulan.",
+      "Gerhana Matahari.",
+      "Bulan purnama.",
+      "Pasang surut minimum."
+    ],
+    answer: "B",
+    pembahasan: "Gerhana Matahari terjadi saat Bulan berada di antara Matahari dan Bumi sehingga menghalangi cahaya Matahari."
+  },
+  {
+    q: "Gerhana Bulan hanya dapat terjadi ketika Bulan berada pada fase purnama. Namun, gerhana Bulan tidak terjadi setiap bulan. Penyebabnya adalah ....",
+    options: [
+      "Bulan berhenti mengelilingi Bumi pada fase purnama.",
+      "Matahari tidak selalu menghasilkan cahaya yang cukup.",
+      "Bidang orbit Bulan memiliki kemiringan sekitar 5° terhadap bidang orbit Bumi.",
+      "Bumi hanya mengalami gerhana satu kali dalam setahun."
+    ],
+    answer: "C",
+    pembahasan: "Bidang orbit Bulan miring sekitar 5° terhadap bidang ekliptika, sehingga tidak setiap purnama Bulan tepat berada di bayangan Bumi."
+  },
+  {
+    q: "Pada saat gerhana Matahari total, seorang pengamat di wilayah tertentu tidak dapat melihat piringan Matahari karena tertutup seluruhnya oleh Bulan. Peristiwa tersebut terjadi ketika ....",
+    options: [
+      "Bumi berada di antara Matahari dan Bulan.",
+      "Bulan berada di antara Matahari dan Bumi serta menutupi seluruh piringan Matahari dari sudut pandang pengamat.",
+      "Matahari berada di antara Bumi dan Bulan.",
+      "Bulan berada pada posisi terjauh dari Bumi tanpa menutupi Matahari."
+    ],
+    answer: "B",
+    pembahasan: "Gerhana Matahari total terjadi saat Bulan sepenuhnya menutupi piringan Matahari dari sudut pandang pengamat di Bumi."
+  },
+  {
+    q: "Wilayah pesisir mengalami kenaikan dan penurunan permukaan air laut secara berkala. Fenomena tersebut terutama dipengaruhi oleh ....",
+    options: [
+      "Gaya gravitasi Bulan dan Matahari terhadap air laut di Bumi.",
+      "Perubahan suhu udara setiap hari.",
+      "Rotasi Matahari pada porosnya.",
+      "Aktivitas gunung berapi di dasar laut."
+    ],
+    answer: "A",
+    pembahasan: "Pasang surut air laut terutama disebabkan oleh gaya gravitasi Bulan dan Matahari terhadap massa air di Bumi."
+  },
+  {
+    q: "Matahari memiliki beberapa lapisan, salah satunya inti Matahari. Bagian tersebut memiliki peran penting karena ....",
+    options: [
+      "Menjadi tempat terjadinya reaksi nuklir yang menghasilkan energi.",
+      "Menjadi tempat terbentuknya cincin Matahari.",
+      "Menjadi lapisan yang menghasilkan angin Bumi.",
+      "Menjadi tempat berlangsungnya proses fotosintesis."
+    ],
+    answer: "A",
+    pembahasan: "Inti Matahari adalah tempat berlangsungnya reaksi fusi nuklir yang mengubah hidrogen menjadi helium dan menghasilkan energi Matahari."
+  },
+  {
+    q: "Indonesia umumnya mengalami musim hujan dan musim kemarau, sedangkan wilayah beriklim sedang mengalami empat musim. Perbedaan tersebut berkaitan dengan ....",
+    options: [
+      "Perbedaan jumlah planet yang terlihat dari masing-masing wilayah.",
+      "Revolusi Bumi, kemiringan sumbu rotasi, dan kondisi pergerakan massa udara.",
+      "Perbedaan jarak Bumi dan Bulan pada setiap wilayah.",
+      "Rotasi Matahari yang menyebabkan perubahan bentuk Bumi."
+    ],
+    answer: "B",
+    pembahasan: "Musim di Bumi dipengaruhi oleh revolusi Bumi dan kemiringan sumbu rotasi, serta faktor atmosferik seperti pergerakan massa udara."
+  },
+  {
+    q: "Aktivitas Matahari yang kuat dapat menimbulkan gangguan terhadap teknologi di Bumi. Salah satu dampak yang mungkin terjadi adalah ....",
+    options: [
+      "Menghentikan revolusi Bumi.",
+      "Mengubah ukuran planet secara langsung.",
+      "Mengganggu komunikasi radio, satelit, dan sistem navigasi.",
+      "Menghilangkan atmosfer Bumi secara seketika."
+    ],
+    answer: "C",
+    pembahasan: "Badai geomagnetik akibat aktivitas Matahari dapat mengganggu komunikasi radio, operasi satelit, dan sistem navigasi."
+  },
+  {
+    q: "Sebuah gunung berapi mengalami letusan besar dan melepaskan sulfur dioksida dalam jumlah besar ke atmosfer. Gas tersebut dapat membentuk aerosol sulfat yang memantulkan sebagian cahaya Matahari ke ruang angkasa. Dampak iklim yang mungkin terjadi adalah ....",
+    options: [
+      "Suhu permukaan Bumi menurun sementara waktu.",
+      "Suhu Bumi meningkat secara permanen.",
+      "Jumlah energi Matahari yang mencapai Bumi bertambah.",
+      "Seluruh wilayah Bumi langsung mengalami musim dingin."
+    ],
+    answer: "A",
+    pembahasan: "Aerosol sulfat di stratosfer memantulkan sinar Matahari sehingga dapat menurunkan suhu permukaan Bumi untuk sementara."
+  },
+  {
+    q: "Perubahan iklim dapat disebabkan oleh faktor alami dan aktivitas manusia. Seorang peneliti menemukan peningkatan konsentrasi karbon dioksida, metana, dan dinitrogen oksida di atmosfer akibat pembakaran bahan bakar fosil dan penebangan hutan. Kesimpulan paling tepat berdasarkan fenomena tersebut adalah ....",
+    options: [
+      "Aktivitas manusia memperkuat efek rumah kaca sehingga meningkatkan suhu rata-rata Bumi.",
+      "Perubahan iklim hanya disebabkan oleh aktivitas Matahari.",
+      "Gas rumah kaca berfungsi memantulkan seluruh panas Bumi ke luar angkasa.",
+      "Penebangan hutan tidak memiliki hubungan dengan perubahan iklim."
+    ],
+    answer: "A",
+    pembahasan: "Peningkatan gas rumah kaca akibat aktivitas manusia memperkuat efek rumah kaca dan meningkatkan suhu rata-rata Bumi."
+  }
+];
+
+// ==================== STATE ====================
+let identity = { nama: '', absen: '', kelas: '' };
+let answers = new Array(25).fill(null);      // null = belum dijawab
+let marked = new Array(25).fill(false);       // ditandai
+let currentQ = 0;
+let timerInterval = null;
+let timeLeft = 3600;                          // 60 menit dalam detik
+let examStarted = false;
+let examSubmitted = false;
+let timeUsedSeconds = 0;
+let warned10 = false, warned5 = false;
+let teacherLoggedIn = false;
+
+// ==================== STARFIELD & SOLAR SYSTEM ====================
+(function generateStarfield() {
+  const sf = document.getElementById('starfield');
+  for (let i = 0; i < 120; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    const size = Math.random() * 2.2 + 0.6;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 100 + '%';
+    star.style.animationDuration = (Math.random() * 4 + 2) + 's';
+    star.style.animationDelay = (Math.random() * 4) + 's';
+    sf.appendChild(star);
+  }
+})();
+
+(function generateSolarSystem() {
+  const container = document.getElementById('solarSystem');
+  if (!container) return;
+  const planets = [
+    { name: 'mercury', radius: 28, speed: 6 },
+    { name: 'venus', radius: 44, speed: 9 },
+    { name: 'earth', radius: 62, speed: 12 },
+    { name: 'mars', radius: 80, speed: 16 },
+    { name: 'jupiter', radius: 104, speed: 22 },
+    { name: 'saturn', radius: 128, speed: 28 },
+    { name: 'uranus', radius: 150, speed: 34 },
+    { name: 'neptune', radius: 170, speed: 40 }
+  ];
+  const maxR = 170;
+  planets.forEach((p, idx) => {
+    const orbit = document.createElement('div');
+    orbit.className = 'orbit';
+    const size = p.radius * 2;
+    orbit.style.width = size + 'px';
+    orbit.style.height = size + 'px';
+    orbit.style.animationDuration = (12 + idx * 3) + 's';
+    orbit.style.animationDirection = idx % 2 === 0 ? 'normal' : 'reverse';
+    orbit.style.opacity = '0.5';
+
+    const planet = document.createElement('div');
+    planet.className = 'planet ' + p.name;
+    planet.style.top = '-4px';
+    planet.style.left = '50%';
+    planet.style.transform = 'translateX(-50%)';
+    orbit.appendChild(planet);
+    container.appendChild(orbit);
+  });
+})();
+
+// ==================== NAVIGATION ====================
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(pageId);
+  if (target) {
+    target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function scrollToInfo() {
+  const el = document.getElementById('infoUjian');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ==================== IDENTITY ====================
+function saveIdentity() {
+  const nama = document.getElementById('inputNama').value.trim();
+  const absen = document.getElementById('inputAbsen').value.trim();
+  const kelas = document.getElementById('inputKelas').value;
+
+  // Validasi
+  if (!nama) { showNotice('❌ Nama lengkap tidak boleh kosong!'); return; }
+  if (!absen) { showNotice('❌ Nomor absen tidak boleh kosong!'); return; }
+  if (!/^\d+$/.test(absen)) { showNotice('❌ Nomor absen hanya boleh berisi angka!'); return; }
+  if (!kelas) { showNotice('❌ Silakan pilih kelas terlebih dahulu!'); return; }
+
+  identity = { nama, absen, kelas };
+  sessionStorage.setItem('astroscience_identity', JSON.stringify(identity));
+
+  // Isi info header
+  updateStudentInfoDisplays();
+
+  showNotice('✅ Identitas berhasil disimpan!');
+  setTimeout(() => showPage('page-rules'), 400);
+}
+
+function updateStudentInfoDisplays() {
+  const headerEl = document.getElementById('studentInfoHeader');
+  const fullEl = document.getElementById('studentInfoFull');
+  if (headerEl) {
+    headerEl.innerHTML = `
+      <div class="item">Nama: <strong>${identity.nama}</strong></div>
+      <div class="item">Absen: <strong>${identity.absen}</strong></div>
+      <div class="item">Kelas: <strong>${identity.kelas}</strong></div>
+    `;
+  }
+  if (fullEl) {
+    fullEl.innerHTML = `
+      <div class="item">Nama: <strong>${identity.nama}</strong></div>
+      <div class="item">Absen: <strong>${identity.absen}</strong></div>
+      <div class="item">Kelas: <strong>${identity.kelas}</strong></div>
+      <div class="item">Materi: <strong>Bumi dan Tata Surya</strong></div>
+    `;
+  }
+}
+
+// Restore identity if exists
+(function restoreIdentity() {
+  const saved = sessionStorage.getItem('astroscience_identity');
+  if (saved) {
+    try {
+      identity = JSON.parse(saved);
+      document.getElementById('inputNama').value = identity.nama;
+      document.getElementById('inputAbsen').value = identity.absen;
+      document.getElementById('inputKelas').value = identity.kelas;
+      updateStudentInfoDisplays();
+    } catch (e) {}
+  }
+  // Restore answers
+  const savedAns = sessionStorage.getItem('astroscience_answers');
+  if (savedAns) {
+    try { answers = JSON.parse(savedAns); } catch (e) {}
+  }
+  const savedMarked = sessionStorage.getItem('astroscience_marked');
+  if (savedMarked) {
+    try { marked = JSON.parse(savedMarked); } catch (e) {}
+  }
+})();
+
+function startExamFlow() {
+  if (identity.nama) {
+    showPage('page-rules');
+  } else {
+    showPage('page-identity');
+  }
+}
+
+// ==================== RULES ====================
+function toggleStartButton() {
+  const checked = document.getElementById('checkRules').checked;
+  document.getElementById('btnStartExam').disabled = !checked;
+}
+
+function startWorking() {
+  if (!identity.nama) {
+    showNotice('⚠️ Silakan isi identitas terlebih dahulu!');
+    showPage('page-identity');
+    return;
+  }
+  if (!document.getElementById('checkRules').checked) {
+    showNotice('⚠️ Centang persetujuan petunjuk terlebih dahulu!');
+    return;
+  }
+  examStarted = true;
+  showPage('page-exam');
+  updateStudentInfoDisplays();
+  renderQuestion(currentQ);
+  startTimer();
+}
+
+// ==================== TIMER ====================
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timeLeft = 0;
+      updateTimerDisplay();
+      autoSubmit();
+      return;
+    }
+    timeLeft--;
+    timeUsedSeconds = 3600 - timeLeft;
+    updateTimerDisplay();
+
+    // Warnings
+    if (timeLeft <= 600 && !warned10) {
+      warned10 = true;
+      showNotice('⏰ Waktu tersisa 10 menit lagi!');
+    }
+    if (timeLeft <= 300 && !warned5) {
+      warned5 = true;
+      showNotice('⏰ Waktu tersisa 5 menit lagi!');
+    }
+  }, 1000);
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  const box = document.getElementById('timerBox');
+  const display = document.getElementById('timerDisplay');
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  display.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  box.classList.remove('warning', 'danger');
+  if (timeLeft <= 300) box.classList.add('danger');
+  else if (timeLeft <= 600) box.classList.add('warning');
+}
+
+function autoSubmit() {
+  showNotice('⏰ Waktu habis! Jawaban dikumpulkan otomatis.');
+  finalizeSubmission();
+}
+
+// ==================== QUESTION RENDERING ====================
+function renderQuestion(idx) {
+  currentQ = idx;
+  const q = QUESTIONS[idx];
+  document.getElementById('questionNumberLabel').textContent = `SOAL ${idx + 1} DARI 25`;
+  document.getElementById('questionText').textContent = q.q;
+
+  // Options
+  const optsContainer = document.getElementById('optionsContainer');
+  optsContainer.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.options.forEach((opt, i) => {
+    const letter = letters[i];
+    const div = document.createElement('div');
+    div.className = 'option' + (answers[idx] === letter ? ' selected' : '');
+    div.onclick = () => selectOption(idx, letter);
+    div.innerHTML = `
+      <div class="option-letter">${letter}</div>
+      <div class="option-text">${opt}</div>
+    `;
+    optsContainer.appendChild(div);
+  });
+
+  updateNavGrid();
+  updateAnsweredCounter();
+  updateMarkButton();
+}
+
+function selectOption(qIdx, letter) {
+  if (examSubmitted) return;
+  answers[qIdx] = letter;
+  sessionStorage.setItem('astroscience_answers', JSON.stringify(answers));
+
+  // Update UI for options
+  const opts = document.querySelectorAll('#optionsContainer .option');
+  opts.forEach((el, i) => {
+    const l = ['A','B','C','D'][i];
+    el.classList.toggle('selected', l === letter);
+  });
+
+  updateNavGrid();
+  updateAnsweredCounter();
+}
+
+function updateNavGrid() {
+  const grid = document.getElementById('navGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 25; i++) {
+    const btn = document.createElement('div');
+    btn.className = 'nav-num';
+    btn.textContent = i + 1;
+    if (i === currentQ) btn.classList.add('active');
+    if (answers[i]) btn.classList.add('answered');
+    if (marked[i]) btn.classList.add('marked');
+    btn.onclick = () => { renderQuestion(i); };
+    grid.appendChild(btn);
+  }
+}
+
+function updateAnsweredCounter() {
+  const count = answers.filter(a => a !== null).length;
+  document.getElementById('answeredCounter').textContent = `${count}/25`;
+}
+
+function updateMarkButton() {
+  const btn = document.getElementById('btnMark');
+  if (marked[currentQ]) {
+    btn.innerHTML = '<i class="fas fa-flag"></i> HAPUS TANDA';
+    btn.style.borderColor = 'var(--yellow)';
+    btn.style.color = 'var(--yellow)';
+  } else {
+    btn.innerHTML = '<i class="fas fa-flag"></i> TANDAI UNTUK DITINJAU';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+}
+
+function toggleMark() {
+  if (examSubmitted) return;
+  marked[currentQ] = !marked[currentQ];
+  sessionStorage.setItem('astroscience_marked', JSON.stringify(marked));
+  updateNavGrid();
+  updateMarkButton();
+}
+
+function prevQuestion() {
+  if (currentQ > 0) renderQuestion(currentQ - 1);
+}
+function nextQuestion() {
+  if (currentQ < 24) renderQuestion(currentQ + 1);
+}
+
+// ==================== SUBMIT MODAL ====================
+function showSubmitModal() {
+  if (examSubmitted) return;
+  const answered = answers.filter(a => a !== null).length;
+  const unanswered = 25 - answered;
+  const markedCount = marked.filter(m => m).length;
+  document.getElementById('modalAnswered').textContent = answered;
+  document.getElementById('modalUnanswered').textContent = unanswered;
+  document.getElementById('modalMarked').textContent = markedCount;
+  const warn = document.getElementById('modalWarning');
+  if (unanswered > 0) {
+    warn.classList.remove('hidden');
+    warn.innerHTML = `<i class="fas fa-triangle-exclamation"></i> Masih ada ${unanswered} soal yang belum dijawab. Yakin ingin mengumpulkan?`;
+  } else {
+    warn.classList.add('hidden');
+  }
+  document.getElementById('submitModal').classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function confirmSubmit() {
+  closeModal('submitModal');
+  finalizeSubmission();
+}
+
+// ==================== SUBMIT & SCORE ====================
+function finalizeSubmission() {
+  if (examSubmitted) return;
+  examSubmitted = true;
+  if (timerInterval) clearInterval(timerInterval);
+
+  // Calculate score
+  let correct = 0, wrong = 0, unanswered = 0;
+  for (let i = 0; i < 25; i++) {
+    if (answers[i] === null) { unanswered++; }
+    else if (answers[i] === QUESTIONS[i].answer) { correct++; }
+    else { wrong++; }
+  }
+  const score = correct * 4;
+  const percentage = (correct / 25 * 100).toFixed(1);
+
+  const timeUsed = 3600 - timeLeft;
+
+  // Save result
+  const resultData = {
+    nama: identity.nama,
+    absen: identity.absen,
+    kelas: identity.kelas,
+    answers: [...answers],
+    marked: [...marked],
+    correct,
+    wrong,
+    unanswered,
+    score,
+    percentage: parseFloat(percentage),
+    timeUsed,
+    date: new Date().toISOString(),
+    timeUsedStr: formatTime(timeUsed)
+  };
+
+  // Store in localStorage for teacher dashboard
+  const allResults = JSON.parse(localStorage.getItem('astroscience_results') || '[]');
+  allResults.push(resultData);
+  localStorage.setItem('astroscience_results', JSON.stringify(allResults));
+
+  // Store current result for display
+  window.currentResult = resultData;
+
+  // Show result page
+  showResultPage(resultData);
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2,'0')} menit ${String(s).padStart(2,'0')} detik`;
+}
+
+function showResultPage(result) {
+  showPage('page-result');
+
+  // Score circle
+  const circle = document.getElementById('scoreCircle');
+  const scoreVal = document.getElementById('scoreValue');
+  circle.style.setProperty('--score', 0);
+  // Animate score
+  let current = 0;
+  const target = result.score;
+  const step = Math.max(1, Math.ceil(target / 60));
+  const anim = setInterval(() => {
+    current += step;
+    if (current >= target) { current = target; clearInterval(anim); }
+    scoreVal.textContent = current;
+    circle.style.setProperty('--score', current);
+  }, 20);
+
+  // Category
+  const badge = document.getElementById('categoryBadge');
+  let catText, catClass;
+  if (result.score >= 90) { catText = 'Sangat Baik'; catClass = 'cat-sangat'; }
+  else if (result.score >= 80) { catText = 'Baik'; catClass = 'cat-baik'; }
+  else if (result.score >= 70) { catText = 'Cukup'; catClass = 'cat-cukup'; }
+  else { catText = 'Perlu Belajar Lebih Giat'; catClass = 'cat-kurang'; }
+  badge.textContent = catText;
+  badge.className = 'category-badge ' + catClass;
+
+  // Identity card
+  document.getElementById('resultIdentityCard').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.88rem;">
+      <div><span style="color:var(--gray);">Nama:</span> <strong>${result.nama}</strong></div>
+      <div><span style="color:var(--gray);">Absen:</span> <strong>${result.absen}</strong></div>
+      <div><span style="color:var(--gray);">Kelas:</span> <strong>${result.kelas}</strong></div>
+      <div><span style="color:var(--gray);">Waktu:</span> <strong>${result.timeUsedStr}</strong></div>
+    </div>
+  `;
+
+  // Stats
+  document.getElementById('resultStats').innerHTML = `
+    <div class="result-stat green"><div class="num">${result.correct}</div><div class="lbl">Benar</div></div>
+    <div class="result-stat red"><div class="num">${result.wrong}</div><div class="lbl">Salah</div></div>
+    <div class="result-stat gray"><div class="num">${result.unanswered}</div><div class="lbl">Tidak Dijawab</div></div>
+    <div class="result-stat gold"><div class="num">${result.percentage}%</div><div class="lbl">Persentase</div></div>
+  `;
+
+  // Motivation
+  let motivation = '';
+  if (result.score >= 90) motivation = '"Luar biasa! Pemahamanmu tentang alam semesta sangat baik. Terus pertahankan rasa ingin tahumu!"';
+  else if (result.score >= 80) motivation = '"Kerja bagus! Sedikit lagi menuju sempurna. Terus tingkatkan pemahamanmu tentang Tata Surya!"';
+  else if (result.score >= 70) motivation = '"Cukup baik! Pelajari kembali materi yang masih kurang dan teruslah belajar."';
+  else motivation = '"Jangan menyerah! Terus tingkatkan semangat belajar dan rasa ingin tahumu. Alam semesta menyimpan banyak hal menarik untuk dipelajari!"';
+  document.getElementById('resultMotivation').textContent = motivation;
+
+  // Build review
+  buildReview(result);
+}
+
+function buildReview(result) {
+  const list = document.getElementById('reviewList');
+  list.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  for (let i = 0; i < 25; i++) {
+    const q = QUESTIONS[i];
+    const studentAns = result.answers[i];
+    const correctAns = q.answer;
+    const isCorrect = studentAns === correctAns;
+    const isUnanswered = studentAns === null;
+    const statusClass = isUnanswered ? 'unanswered' : (isCorrect ? 'correct' : 'wrong');
+    const statusLabel = isUnanswered ? '<i class="fas fa-minus-circle"></i> Tidak Dijawab' :
+                        (isCorrect ? '<i class="fas fa-check-circle"></i> BENAR' : '<i class="fas fa-times-circle"></i> SALAH');
+
+    const item = document.createElement('div');
+    item.className = 'review-item ' + statusClass;
+    item.innerHTML = `
+      <div class="review-head">
+        <div class="review-num">SOAL NOMOR ${i + 1}</div>
+        <div class="review-status ${statusClass}">${statusLabel}</div>
+      </div>
+      <div class="review-q">${q.q}</div>
+      <div class="review-answers">
+        <div class="ans-row ${isCorrect && !isUnanswered ? 'correct-ans' : (isUnanswered ? '' : 'wrong-ans')}">
+          <span class="ans-label">Jawaban siswa:</span>
+          <span class="ans-value">${isUnanswered ? '<em>Tidak dijawab</em>' : studentAns + '. ' + q.options[letters.indexOf(studentAns)]}</span>
+        </div>
+        <div class="ans-row correct-ans">
+          <span class="ans-label">Kunci jawaban:</span>
+          <span class="ans-value"><strong>${correctAns}.</strong> ${q.options[letters.indexOf(correctAns)]}</span>
+        </div>
+      </div>
+      <div class="pembahasan"><strong>Pembahasan:</strong> ${q.pembahasan}</div>
+    `;
+    list.appendChild(item);
+  }
+}
+
+function toggleReview() {
+  const sec = document.getElementById('reviewSection');
+  sec.classList.toggle('active');
+  if (sec.classList.contains('active')) {
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// ==================== PDF DOWNLOAD ====================
+async function downloadPDF() {
+  if (!window.currentResult) {
+    showNotice('⚠️ Tidak ada data hasil ujian.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const result = window.currentResult;
+  const letters = ['A','B','C','D'];
+  const pageW = 210;
+  const margin = 15;
+  let y = 20;
+
+  function checkPage(needed) {
+    if (y + needed > 280) {
+      doc.addPage();
+      y = 20;
+      addHeader();
+    }
+  }
+  function addHeader() {
+    doc.setFillColor(10, 14, 39);
+    doc.rect(0, 0, pageW, 12, 'F');
+    doc.setTextColor(34, 211, 238);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ASTROSCIENCE — LAPORAN HASIL ULANGAN HARIAN IPA', margin, 8);
+    doc.setTextColor(0, 0, 0);
+  }
+  addHeader();
+
+  // Title
+  doc.setTextColor(10, 14, 39);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('LAPORAN HASIL ULANGAN HARIAN IPA', pageW / 2, y, { align: 'center' });
+  y += 8;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Bab VII – Bumi dan Tata Surya | Kurikulum Merdeka', pageW / 2, y, { align: 'center' });
+  y += 5;
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, y, pageW - margin, y);
+  y += 8;
+
+  // Identity
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('IDENTITAS SISWA', margin, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  const identityLines = [
+    `Nama Lengkap     : ${result.nama}`,
+    `Nomor Absen      : ${result.absen}`,
+    `Kelas            : ${result.kelas}`,
+    `Mata Pelajaran   : Ilmu Pengetahuan Alam (IPA)`,
+    `Materi           : Bab VII – Bumi dan Tata Surya`,
+    `Tanggal Ujian    : ${new Date(result.date).toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}`,
+    `Waktu Pengerjaan : ${result.timeUsedStr}`
+  ];
+  identityLines.forEach(line => {
+    doc.text(line, margin, y);
+    y += 5;
+  });
+  y += 3;
+  doc.line(margin, y, pageW - margin, y);
+  y += 8;
+
+  // Score box
+  doc.setFillColor(240, 248, 255);
+  doc.roundedRect(margin, y, pageW - margin * 2, 28, 3, 3, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('HASIL UJIAN', margin + 5, y + 8);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Benar: ${result.correct}  |  Salah: ${result.wrong}  |  Tidak Dijawab: ${result.unanswered}`, margin + 5, y + 16);
+  doc.text(`Persentase: ${result.percentage}%`, margin + 5, y + 22);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(10, 14, 39);
+  doc.text(`NILAI AKHIR: ${result.score}`, pageW - margin - 5, y + 18, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
+  y += 35;
+
+  // Category
+  let catText;
+  if (result.score >= 90) catText = 'Sangat Baik';
+  else if (result.score >= 80) catText = 'Baik';
+  else if (result.score >= 70) catText = 'Cukup';
+  else catText = 'Perlu Belajar Lebih Giat';
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(`Status/Kategori: ${catText}`, margin, y);
+  y += 10;
+  doc.line(margin, y, pageW - margin, y);
+  y += 8;
+
+  // ====== RINCIAN SOAL ======
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('LAMPIRAN: RINCIAN JAWABAN 25 SOAL', pageW / 2, y, { align: 'center' });
+  y += 10;
+
+  for (let i = 0; i < 25; i++) {
+    const q = QUESTIONS[i];
+    const studentAns = result.answers[i];
+    const correctAns = q.answer;
+    const isCorrect = studentAns === correctAns;
+    const isUnanswered = studentAns === null;
+
+    // Estimate needed height
+    const qLines = doc.splitTextToSize(q.q, pageW - margin * 2 - 10);
+    const optsLines = q.options.map(o => doc.splitTextToSize(o, pageW - margin * 2 - 20));
+    let totalOptLines = 0;
+    optsLines.forEach(l => totalOptLines += l.length);
+    const pembLines = doc.splitTextToSize(q.pembahasan, pageW - margin * 2 - 10);
+    const needed = 10 + qLines.length * 4.5 + totalOptLines * 4.5 + 20 + pembLines.length * 4 + 20;
+    checkPage(needed);
+
+    // Question number & status
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(10, 14, 39);
+    doc.text(`SOAL NOMOR ${i + 1}`, margin, y);
+    if (isUnanswered) {
+      doc.setTextColor(150, 150, 150);
+      doc.text('[TIDAK DIJAWAB]', pageW - margin, y, { align: 'right' });
+    } else if (isCorrect) {
+      doc.setTextColor(34, 197, 94);
+      doc.text('[BENAR ✓]', pageW - margin, y, { align: 'right' });
+    } else {
+      doc.setTextColor(239, 68, 68);
+      doc.text('[SALAH ✕]', pageW - margin, y, { align: 'right' });
+    }
+    y += 5;
+
+    // Question text
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    qLines.forEach(line => {
+      doc.text(line, margin, y);
+      y += 4.5;
+    });
+    y += 2;
+
+    // Options
+    q.options.forEach((opt, oi) => {
+      const L = letters[oi];
+      const isSelected = studentAns === L;
+      const isKey = correctAns === L;
+      if (isSelected) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(isCorrect ? 34 : 239, isCorrect ? 197 : 68, isCorrect ? 94 : 68);
+      } else if (isKey) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(34, 197, 94);
+      } else {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(80, 80, 80);
+      }
+      const marker = (isSelected ? '→ ' : '  ') + L + '. ';
+      const optLines = doc.splitTextToSize(marker + opt, pageW - margin * 2 - 10);
+      optLines.forEach(line => {
+        doc.text(line, margin + 5, y);
+        y += 4.2;
+      });
+    });
+    y += 2;
+
+    // Student answer
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Jawaban siswa: ${isUnanswered ? 'Tidak dijawab' : studentAns}`, margin, y);
+    y += 4;
+    doc.text(`Kunci jawaban: ${correctAns}`, margin, y);
+    y += 5;
+
+    // Pembahasan
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(60, 60, 120);
+    doc.text('Pembahasan:', margin, y);
+    y += 4;
+    doc.setFont('helvetica', 'normal');
+    pembLines.forEach(line => {
+      doc.text(line, margin + 3, y);
+      y += 4;
+    });
+    y += 3;
+
+    // Separator
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, y, pageW - margin, y);
+    y += 5;
+  }
+
+  // ====== REKAP TABLE ======
+  checkPage(80);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(10, 14, 39);
+  doc.text('TABEL REKAPITULASI JAWABAN', pageW / 2, y, { align: 'center' });
+  y += 8;
+
+  // Table header
+  doc.setFillColor(10, 14, 39);
+  doc.rect(margin, y, pageW - margin * 2, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('No', margin + 3, y + 5.5);
+  doc.text('Jawaban Siswa', margin + 20, y + 5.5);
+  doc.text('Kunci', margin + 70, y + 5.5);
+  doc.text('Status', margin + 100, y + 5.5);
+  doc.text('No', margin + 125, y + 5.5);
+  doc.text('Jawaban Siswa', margin + 142, y + 5.5);
+  doc.text('Kunci', margin + 180, y + 5.5);
+  y += 8;
+
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
+  const rowH = 5.5;
+  let maxRows = Math.ceil(25 / 2);
+  for (let r = 0; r < maxRows; r++) {
+    if (y + rowH > 280) { doc.addPage(); addHeader(); y = 20; }
+    for (let col = 0; col < 2; col++) {
+      const idx = r + col * maxRows;
+      if (idx >= 25) continue;
+      const q = QUESTIONS[idx];
+      const sa = result.answers[idx];
+      const ca = q.answer;
+      const stat = sa === null ? '—' : (sa === ca ? '✓' : '✕');
+      const xBase = col === 0 ? margin : margin + 110;
+      if (sa === null) doc.setTextColor(150,150,150);
+      else if (sa === ca) doc.setTextColor(34,197,94);
+      else doc.setTextColor(239,68,68);
+      doc.text(String(idx+1), xBase + 3, y + 4);
+      doc.text(sa || '-', xBase + 20, y + 4);
+      doc.text(ca, xBase + 70, y + 4);
+      doc.text(stat, xBase + 100, y + 4);
+    }
+    y += rowH;
+  }
+  y += 5;
+  doc.setDrawColor(180,180,180);
+  doc.line(margin, y, pageW - margin, y);
+  y += 10;
+
+  // ====== PENUTUP ======
+  checkPage(50);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(10, 14, 39);
+  const closing = 'Terus tingkatkan semangat belajar dan rasa ingin tahumu. Setiap proses belajar merupakan langkah untuk memahami alam semesta lebih dalam.';
+  const closingLines = doc.splitTextToSize(closing, pageW - margin * 2 - 10);
+  doc.text(closingLines, margin, y);
+  y += closingLines.length * 5 + 15;
+
+  // Signatures
+  const sigY = y;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text('Guru Mata Pelajaran', margin + 15, sigY);
+  doc.text('Peserta Didik', pageW - margin - 35, sigY);
+  doc.line(margin + 5, sigY + 20, margin + 55, sigY + 20);
+  doc.line(pageW - margin - 50, sigY + 20, pageW - margin, sigY + 20);
+  doc.text('(______________________)', margin + 15, sigY + 28);
+  doc.text(`(${result.nama})`, pageW - margin - 35, sigY + 28);
+
+  // Footer on all pages
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(7);
+    doc.setTextColor(150,150,150);
+    doc.text(`ASTROSCIENCE — Laporan Hasil Ujian | Halaman ${p} dari ${totalPages}`, pageW / 2, 292, { align: 'center' });
+  }
+
+  // Save file
+  const safeName = result.nama.replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`Hasil_Ujian_${safeName}.pdf`);
+  showNotice('📄 PDF berhasil diunduh!');
+}
+
+// ==================== TEACHER DASHBOARD ====================
+function openTeacherLogin() {
+  document.getElementById('teacherLoginModal').classList.add('active');
+  document.getElementById('teacherPin').value = '';
+  setTimeout(() => document.getElementById('teacherPin').focus(), 200);
+}
+
+function verifyTeacherPin() {
+  const pin = document.getElementById('teacherPin').value.trim();
+  if (pin === '12345') {
+    teacherLoggedIn = true;
+    closeModal('teacherLoginModal');
+    showPage('page-teacher');
+    loadResults();
+    showNotice('✅ Login guru berhasil!');
+  } else {
+    showNotice('❌ PIN salah! (default: 12345)');
+  }
+}
+
+function logoutTeacher() {
+  teacherLoggedIn = false;
+  showPage('page-home');
+}
+
+function loadResults() {
+  const results = JSON.parse(localStorage.getItem('astroscience_results') || '[]');
+  const tbody = document.getElementById('teacherTableBody');
+  tbody.innerHTML = '';
+
+  // Stats
+  const total = results.length;
+  const avg = total ? (results.reduce((s, r) => s + r.score, 0) / total).toFixed(1) : 0;
+  const highest = total ? Math.max(...results.map(r => r.score)) : 0;
+  const lowest = total ? Math.min(...results.map(r => r.score)) : 0;
+
+  document.getElementById('teacherStats').innerHTML = `
+    <div class="result-stat"><div class="num">${total}</div><div class="lbl">Total Peserta</div></div>
+    <div class="result-stat gold"><div class="num">${avg}</div><div class="lbl">Rata-rata Nilai</div></div>
+    <div class="result-stat green"><div class="num">${highest}</div><div class="lbl">Nilai Tertinggi</div></div>
+    <div class="result-stat red"><div class="num">${lowest}</div><div class="lbl">Nilai Terendah</div></div>
+  `;
+
+  if (results.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray);">Belum ada data hasil ujian.</td></tr>';
+    return;
+  }
+
+  // Sort by date descending
+  results.sort((a, b) => new Date(b.date) - new Date(a.date));
+  results.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    const dateStr = new Date(r.date).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }) + ' ' +
+                    new Date(r.date).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td style="color:var(--white);font-weight:600;">${r.nama}</td>
+      <td>${r.absen}</td>
+      <td>${r.kelas}</td>
+      <td style="color:var(--green);">${r.correct}</td>
+      <td style="color:var(--red);">${r.wrong}</td>
+      <td style="color:var(--gray);">${r.unanswered}</td>
+      <td style="color:var(--gold);font-weight:700;font-family:'Orbitron';">${r.score}</td>
+      <td style="font-size:0.72rem;">${dateStr}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function exportCSV() {
+  const results = JSON.parse(localStorage.getItem('astroscience_results') || '[]');
+  if (results.length === 0) { showNotice('⚠️ Belum ada data untuk diunduh.'); return; }
+  const header = 'No,Nama,Absen,Kelas,Benar,Salah,Tidak Dijawab,Nilai,Persentase,Waktu (detik),Tanggal\n';
+  const rows = results.map((r, i) => 
+    `${i+1},"${r.nama}",${r.absen},"${r.kelas}",${r.correct},${r.wrong},${r.unanswered},${r.score},${r.percentage},${r.timeUsed},"${new Date(r.date).toLocaleString('id-ID')}"`
+  ).join('\n');
+  const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'Rekap_Hasil_Ujian_ASTROSCIENCE.csv';
+  link.click();
+  showNotice('📊 CSV berhasil diunduh!');
+}
+
+// ==================== UTILITY ====================
+function showNotice(msg) {
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+function backToHome() {
+  showPage('page-home');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ==================== KEYBOARD SHORTCUTS (bonus) ====================
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('page-exam').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft') prevQuestion();
+  else if (e.key === 'ArrowRight') nextQuestion();
+  else if (['1','2','3','4','a','b','c','d','A','B','C','D'].includes(e.key)) {
+    const map = { '1':'A','2':'B','3':'C','4':'D','a':'A','b':'B','c':'C','d':'D','A':'A','B':'B','C':'C','D':'D' };
+    if (map[e.key]) selectOption(currentQ, map[e.key]);
+  }
+});
+
+// ==================== PREVENT ACCIDENTAL LEAVE ====================
+window.addEventListener('beforeunload', (e) => {
+  if (examStarted && !examSubmitted) {
+    e.preventDefault();
+    e.returnValue = 'Ujian sedang berlangsung. Yakin ingin meninggalkan halaman?';
+  }
+});
+
+// ==================== RESTORE ANSWERS ON LOAD ====================
+(function restoreExamState() {
+  if (answers.some(a => a !== null) || marked.some(m => m)) {
+    updateStudentInfoDisplays();
+    updateNavGrid();
+    updateAnsweredCounter();
+  }
+})();
+
+// ==================== INIT ====================
+console.log('%c🚀 ASTROSCIENCE – Digital Examination Ready!', 'color:#22d3ee;font-size:14px;font-weight:bold;');
+console.log('%cDefault PIN Guru: 12345', 'color:#fbbf24;font-size:11px;');
+</script>
+</body>
+</html>
